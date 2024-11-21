@@ -1,6 +1,7 @@
 import requests
 import pytest
 import argparse
+import time
 
 # Default values for the base URL and port
 DEFAULT_HOST = "localhost"
@@ -55,23 +56,33 @@ def test_api_prediction(api_url):
     """
     Test the prediction endpoint by sending a valid context and model request.
     """
+    with open("test.txt","r+") as file:
+        context_data = file.read()
     payload = {
-        "context": "This is a long test context that needs to be compressed.",
+        "context": context_data,
         "target_model": args.target_model,
     }
 
-    response = requests.post(api_url, json=payload)
+    time_elapsed = []
+    for trial in range(10):
+        t1 = time.time()
+        response = requests.post(api_url, json=payload)
 
-    # Ensure the response status is OK
-    assert (
-        response.status_code == 200
-    ), f"Expected status code 200 but got {response.status_code}"
+        # Ensure the response status is OK
+        assert (
+            response.status_code == 200
+        ), f"Expected status code 200 but got {response.status_code}"
 
-    # Parse the response JSON
-    data = response.json()
+        # Parse the response JSON
+        data = response.json()
 
-    # Check that the necessary fields are in the response
-    assert "compressed_tokens" in data, "Response should contain compressed_context."
+        # Check that the necessary fields are in the response
+        assert "compressed_tokens_b64" in data, "Response should contain compressed_context."
 
-    # Ensure the compressed context is not empty
-    assert len(data["compressed_tokens"]) > 0, "Compressed context should not be empty."
+        # Ensure the compressed context is not empty
+        assert len(data["compressed_tokens_b64"]) > 0, "Compressed context should not be empty."
+
+        time_elapsed.append(time.time() - t1)
+
+        print(f"Trial {trial+1}: Inference time: {time.time() - t1:.2f} seconds")
+    print("Average inference time:", sum(time_elapsed) / len(time_elapsed))
