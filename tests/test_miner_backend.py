@@ -8,7 +8,6 @@ DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8080
 DEFAULT_API_PATH = "/condense"
 
-
 def get_args():
     """
     Function to parse command-line arguments for test configuration.
@@ -37,14 +36,6 @@ def get_args():
     return args
 
 
-# Get arguments from the command line
-args = get_args()
-
-# Construct the base URL using the provided arguments
-BASE_URL = f"http://{args.host}:{args.port}{args.api_path}"
-
-
-@pytest.fixture
 def api_url():
     """
     Fixture to provide the full API URL based on the host, port, and path.
@@ -58,6 +49,7 @@ def test_api_prediction(api_url):
     """
     with open("test.txt","r+") as file:
         context_data = file.read()
+
     payload = {
         "context": context_data,
         "target_model": args.target_model,
@@ -86,3 +78,15 @@ def test_api_prediction(api_url):
 
         print(f"Trial {trial+1}: Inference time: {time.time() - t1:.2f} seconds")
     print("Average inference time:", sum(time_elapsed) / len(time_elapsed))
+
+if __name__ == "__main__":
+    # Get arguments from the command line
+    args = get_args()
+
+    # Construct the base URL using the provided arguments
+    BASE_URL = f"http://{args.host}:{args.port}{args.api_path}"
+
+    # Run the test
+    test_api_prediction(BASE_URL)
+
+
