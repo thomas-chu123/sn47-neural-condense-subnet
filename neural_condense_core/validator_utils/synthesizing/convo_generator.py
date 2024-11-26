@@ -24,10 +24,11 @@ class ConvoGenerator:
         nonce = str(time.time_ns())
         signature = f"0x{self.keypair.sign(nonce).hex()}"
         return {
-            "validator-hotkey": self.keypair.ss58_address,
-            "signature": signature,
-            "nonce": nonce,
-            "netuid": "47",
+            # "validator-hotkey": self.keypair.ss58_address,
+            # "signature": signature,
+            # "nonce": nonce,
+            # "netuid": "47",
+            "Authorization": "Bearer rayon_huIzLiPThtIpCHctZxlmSiPL3c9FLSRO",
             "Content-Type": "application/json",
         }
 

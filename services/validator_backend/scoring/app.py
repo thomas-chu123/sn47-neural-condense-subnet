@@ -12,6 +12,7 @@ import gc
 from .datatypes import BatchedScoringRequest
 import traceback
 from .metric_handlers import metric_handlers
+from transformers import BitsAndBytesConfig
 
 gc.enable()
 logging.basicConfig(level=logging.INFO)
@@ -27,11 +28,20 @@ class ScoringService:
         """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.dtype = torch.bfloat16
+
+        nf4_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+
         self.model = AutoModelForCausalLM.from_pretrained(
-            "Condense-AI/Mistral-7B-Instruct-v0.2"
+           "Condense-AI/Mistral-7B-Instruct-v0.2",
+            # quantization_config=nf4_config,
         ).to(dtype=self.dtype, device=self.device)
         self.tokenizer = AutoTokenizer.from_pretrained(
-            "Condense-AI/Mistral-7B-Instruct-v0.2"
+           "Condense-AI/Mistral-7B-Instruct-v0.2"
         )
 
     @torch.no_grad()
