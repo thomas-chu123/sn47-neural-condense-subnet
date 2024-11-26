@@ -1,12 +1,12 @@
 import requests
-import pytest
 import argparse
-import time
+from neural_condense_core.common.base64 import base64_to_ndarray
 
 # Default values for the base URL and port
 DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 8080
 DEFAULT_API_PATH = "/condense"
+
 
 def get_args():
     """
@@ -29,64 +29,52 @@ def get_args():
     parser.add_argument(
         "--target-model",
         type=str,
-        default="mistralai/Mistral-7B-Instruct-v0.1",
+        default="Condense-AI/Mistral-7B-Instruct-v0.1",
     )
 
     args, _ = parser.parse_known_args()  # Avoid conflict with pytest's arguments
     return args
 
 
-def api_url():
+# Get arguments from the command line
+args = get_args()
+
+# Construct the base URL using the provided arguments
+BASE_URL = f"http://{args.host}:{args.port}{args.api_path}"
+
+
+def get_api_url():
     """
-    Fixture to provide the full API URL based on the host, port, and path.
+    Function to provide the full API URL based on the host, port, and path.
     """
     return BASE_URL
 
 
-def test_api_prediction(api_url):
+def test_miner_api():
     """
     Test the prediction endpoint by sending a valid context and model request.
     """
-    with open("test.txt","r+") as file:
-        context_data = file.read()
+    api_url = get_api_url()
 
     payload = {
-        "context": context_data,
+        "context": "This is a long test context that needs to be compressed.",
         "target_model": args.target_model,
     }
 
-    time_elapsed = []
-    for trial in range(10):
-        t1 = time.time()
-        response = requests.post(api_url, json=payload)
+    response = requests.post(api_url, json=payload)
 
-        # Ensure the response status is OK
-        assert (
-            response.status_code == 200
-        ), f"Expected status code 200 but got {response.status_code}"
+    if response.status_code != 200:
+        raise Exception(f"Expected status code 200 but got {response.status_code}")
 
-        # Parse the response JSON
-        data = response.json()
+    data = response.json()
 
-        # Check that the necessary fields are in the response
-        assert "compressed_tokens_b64" in data, "Response should contain compressed_context."
+    if "compressed_tokens_base64" not in data:
+        raise Exception("Response should contain compressed_tokens_base64.")
 
-        # Ensure the compressed context is not empty
-        assert len(data["compressed_tokens_b64"]) > 0, "Compressed context should not be empty."
+    compressed_tokens = base64_to_ndarray(data["compressed_tokens_base64"])
 
-        time_elapsed.append(time.time() - t1)
+    seq_len, hidden_size = compressed_tokens.shape
 
-        print(f"Trial {trial+1}: Inference time: {time.time() - t1:.2f} seconds")
-    print("Average inference time:", sum(time_elapsed) / len(time_elapsed))
+    print(f"Compressed tokens shape: {seq_len} x {hidden_size}")
 
-if __name__ == "__main__":
-    # Get arguments from the command line
-    args = get_args()
-
-    # Construct the base URL using the provided arguments
-    BASE_URL = f"http://{args.host}:{args.port}{args.api_path}"
-
-    # Run the test
-    test_api_prediction(BASE_URL)
-
-
+    print("API test passed successfully!")
